@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ภารกิจนักสำรวจดิจิทัล (Digital Explorer Mission)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Kanit -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        },
+                        space: '#0f172a'
+                    },
+                    fontFamily: {
+                        sans: ['Kanit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Styles for game feel */
+        body {
+            font-family: 'Kanit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .grid-cell {
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .explorer-avatar {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .command-card {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .command-card:active {
+            transform: scale(0.95);
+        }
+
+        .pulse-glow {
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(20, 184, 166, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(20, 184, 166, 0.8); }
+        }
+
+        /* Custom scrollbar for command area */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Top Header & Navigation -->
+    <header class="bg-slate-800 border-b border-slate-700 px-4 py-3 sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+            <!-- Brand Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-400 to-indigo-500 flex items-center justify-center text-xl shadow-lg">
+                    🧭
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold bg-gradient-to-r from-teal-300 via-sky-300 to-indigo-300 bg-clip-text text-transparent">
+                        ภารกิจนักสำรวจดิจิทัล
+                    </h1>
+                    <p class="text-xs text-slate-400">วิทยาการคำนวณ ชั้นประถมศึกษาปีที่ 5</p>
+                </div>
+            </div>
+
+            <!-- Level Selector & Controls -->
+            <div class="flex items-center space-x-2">
+                <div class="bg-slate-900/80 border border-slate-700 rounded-lg px-2 py-1 flex items-center space-x-1">
+                    <span class="text-xs text-slate-400 font-medium">ด่าน:</span>
+                    <select id="levelSelect" onchange="switchLevel(parseInt(this.value))" class="bg-transparent text-teal-300 font-bold text-sm focus:outline-none cursor-pointer">
+                        <option value="1" class="bg-slate-800 text-white">1: ป่าดิจิทัล (พื้นฐาน)</option>
+                        <option value="2" class="bg-slate-800 text-white">2: เมืองหุ่นยนต์ (สิ่งกีดขวาง)</option>
+                        <option value="3" class="bg-slate-800 text-white">3: ห้องทดลองไซเบอร์ (เก็บดาว)</option>
+                        <option value="4" class="bg-slate-800 text-white">4: สถานีอวกาศ (เส้นทางสั้นที่สุด)</option>
+                        <option value="5" class="bg-slate-800 text-white">5: ศูนย์ซ่อมคำสั่ง (Debugging)</option>
+                    </select>
+                </div>
+
+                <!-- Sound Toggle -->
+                <button id="soundBtn" onclick="toggleSound()" class="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-teal-300 transition" title="เปิด/ปิด เสียง">
+                    <i id="soundIcon" class="fas fa-volume-up"></i>
+                </button>
+
+                <!-- Hint Button -->
+                <button onclick="showHintModal()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-9 font-bold text-xs md:text-sm rounded-lg transition flex items-center gap-1 shadow">
+                    <i class="fas fa-lightbulb"></i>
+                    <span class="hidden sm:inline">คำใบ้</span>
+                </button>
+
+                <!-- Teacher Dashboard Button -->
+                <button onclick="openTeacherDashboard()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs md:text-sm rounded-lg transition flex items-center gap-1 shadow">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <span>ส่วนของครู</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Workspace -->
+    <main class="max-w-7xl mx-auto w-full p-3 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+
+        <!-- Left Column: Map Display & Level Objectives (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-4">
+            
+            <!-- Level Card Info Banner -->
+            <div id="levelInfoCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span id="levelBadge" class="bg-teal-500/20 text-teal-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-teal-500/30">ด่านที่ 1</span>
+                        <h2 id="levelTitle" class="text-lg font-bold text-white">ป่าดิจิทัล (Digital Forest)</h2>
+                    </div>
+                    <p id="levelDesc" class="text-xs md:text-sm text-slate-300 mt-1">วางแผนคำสั่งพาตัวละครเดินทางไปยังเป้าหมายอย่างเป็นขั้นตอน</p>
+                </div>
+                
+                <!-- Target Objectives Status -->
+                <div class="flex items-center gap-4 bg-slate-900/60 px-3 py-2 rounded-xl border border-slate-700/50 self-stretch md:self-auto justify-around">
+                    <div class="text-center">
+                        <div class="text-xs text-slate-400">เป้าหมายดาว</div>
+                        <div id="starGoalText" class="text-sm font-bold text-amber-400">0/0 ⭐</div>
+                    </div>
+                    <div class="w-px h-8 bg-slate-700"></div>
+                    <div class="text-center">
+                        <div class="text-xs text-slate-400">บล็อกแนะนำ</div>
+                        <div id="optimalStepText" class="text-sm font-bold text-emerald-400">4 คำสั่ง</div>
+                    </div>
+                    <div class="w-px h-8 bg-slate-700"></div>
+                    <div class="text-center">
+                        <div class="text-xs text-slate-400">ผิดพลาด</div>
+                        <div id="errorCountText" class="text-sm font-bold text-rose-400">0 ครั้ง</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8x8 Grid Map Container -->
+            <div class="bg-slate-800 border-2 border-teal-500/30 rounded-2xl p-3 md:p-4 shadow-2xl relative flex flex-col items-center justify-center pulse-glow">
+                
+                <!-- Map Header Overlay -->
+                <div class="w-full flex justify-between items-center mb-2 px-1">
+                    <span class="text-xs font-semibold text-teal-400/80 tracking-wider">MAP GRID 8x8</span>
+                    <span id="currentPosText" class="text-xs text-slate-400">พิกัดปัจจุบัน: (0,0)</span>
+                </div>
+
+                <!-- Interactive 8x8 Grid Canvas/DOM -->
+                <div id="gridBoard" class="grid grid-cols-8 gap-1 md:gap-1.5 bg-slate-950 p-2 md:p-3 rounded-xl border border-slate-700 w-full max-w-[500px] aspect-square shadow-inner">
+                    <!-- Dynamic Grid Tiles generated by JS -->
+                </div>
+
+                <!-- Legend Indicator -->
+                <div class="flex flex-wrap items-center justify-center gap-4 mt-3 text-xs text-slate-300">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-base">🧑‍🚀</span> <span>นักสำรวจ</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-base">🚩</span> <span>จุดหมาย</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-base">⭐</span> <span>ดาวรหัสผ่าน</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3.5 h-3.5 bg-slate-700 border border-slate-600 rounded"></span> <span>สิ่งกีดขวาง</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Algorithmic Command Workspace (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+            
+            <!-- Command Palette Panel -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-lg">
+                <h3 class="text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
+                    <i class="fas fa-cubes text-teal-400"></i>
+                    <span>คำสั่งที่ใช้ได้ (คลิกเพื่อเพิ่ม)</span>
+                </h3>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="addCommand('UP')" class="command-card bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-500 hover:to-sky-400 text-white font-bold p-2.5 rounded-xl flex items-center justify-center gap-2 shadow border border-sky-400/30">
+                        <i class="fas fa-arrow-up text-lg"></i>
+                        <span>เดินขึ้น</span>
+                    </button>
+                    <button onclick="addCommand('DOWN')" class="command-card bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-500 hover:to-sky-400 text-white font-bold p-2.5 rounded-xl flex items-center justify-center gap-2 shadow border border-sky-400/30">
+                        <i class="fas fa-arrow-down text-lg"></i>
+                        <span>เดินลง</span>
+                    </button>
+                    <button onclick="addCommand('LEFT')" class="command-card bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold p-2.5 rounded-xl flex items-center justify-center gap-2 shadow border border-indigo-400/30">
+                        <i class="fas fa-arrow-left text-lg"></i>
+                        <span>เดินซ้าย</span>
+                    </button>
+                    <button onclick="addCommand('RIGHT')" class="command-card bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold p-2.5 rounded-xl flex items-center justify-center gap-2 shadow border border-indigo-400/30">
+                        <i class="fas fa-arrow-right text-lg"></i>
+                        <span>เดินขวา</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Command Sequence Timeline -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-lg flex-grow flex flex-col min-h-[280px]">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fas fa-list-ol text-amber-400"></i>
+                        <span>ลำดับคำสั่ง (Algorithm)</span>
+                        <span id="commandCountBadge" class="bg-slate-700 text-teal-300 text-xs px-2 py-0.5 rounded-full font-mono">0 คำสั่ง</span>
+                    </h3>
+                    <button onclick="clearCommands()" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 transition">
+                        <i class="fas fa-trash-alt"></i> ล้างทั้งหมด
+                    </button>
+                </div>
+
+                <!-- Droppable / Sequence List Area -->
+                <div id="commandSequence" class="bg-slate-950 border border-slate-700/80 rounded-xl p-3 flex-grow overflow-y-auto space-y-2 max-h-[280px] min-h-[160px]">
+                    <!-- Empty State Placeholder -->
+                    <div id="emptySequenceMsg" class="h-full flex flex-col items-center justify-center text-slate-500 text-xs py-8">
+                        <i class="fas fa-puzzle-piece text-3xl mb-2 text-slate-600"></i>
+                        <p>ยังไม่มีคำสั่งในลำดับ</p>
+                        <p class="text-[11px] text-slate-600">คลิกปุ่มเดินด้านบนเพื่อวางแผนคำสั่ง</p>
+                    </div>
+                </div>
+
+                <!-- Execution Speed Controls & Main Actions -->
+                <div class="mt-4 pt-3 border-t border-slate-700 space-y-3">
+                    <div class="flex justify-between items-center text-xs text-slate-400">
+                        <span>ความเร็วเคลื่อนที่:</span>
+                        <div class="flex gap-2">
+                            <button onclick="setSpeed(600)" id="speedSlow" class="px-2 py-1 bg-slate-700 rounded text-slate-300 text-xs">ช้า</button>
+                            <button onclick="setSpeed(350)" id="speedNormal" class="px-2 py-1 bg-teal-600 text-white rounded text-xs font-bold">ปกติ</button>
+                            <button onclick="setSpeed(180)" id="speedFast" class="px-2 py-1 bg-slate-700 rounded text-slate-300 text-xs">เร็ว</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <!-- Reset Button -->
+                        <button onclick="resetMission()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow">
+                            <i class="fas fa-undo"></i>
+                            <span>รีเซ็ตตำแหน่ง</span>
+                        </button>
+
+                        <!-- Run Mission Button -->
+                        <button id="runBtn" onclick="runMission()" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/50 text-base">
+                            <i class="fas fa-play"></i>
+                            <span>เริ่มภารกิจ!</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- MODAL 1: Mission Success Modal -->
+    <div id="successModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-800 border-2 border-teal-400 rounded-3xl p-6 max-w-md w-full shadow-2xl text-center transform transition-all scale-100">
+            <div class="text-6xl mb-2 animate-bounce">🎉</div>
+            <h2 class="text-2xl font-bold text-teal-300">ภารกิจสำเร็จ!</h2>
+            <p id="successSubtitle" class="text-sm text-slate-300 mt-1">ยอดเยี่ยมมาก! คุณแก้ไขปริศนาด่านนี้ได้แล้ว</p>
+
+            <!-- Star Rating Display -->
+            <div id="starContainer" class="flex justify-center gap-2 my-4 text-3xl">
+                <span class="text-amber-400">⭐</span>
+                <span class="text-amber-400">⭐</span>
+                <span class="text-amber-400">⭐</span>
+            </div>
+
+            <!-- Stats Table -->
+            <div class="bg-slate-900/80 rounded-2xl p-4 my-4 border border-slate-700 text-left space-y-2 text-xs md:text-sm">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">จำนวนคำสั่งที่ใช้:</span>
+                    <span id="finalStepsText" class="font-bold text-emerald-400">4 คำสั่ง</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">จำนวนข้อผิดพลาด:</span>
+                    <span id="finalErrorsText" class="font-bold text-rose-400">0 ครั้ง</span>
+                </div>
+                <div class="flex justify-between border-t border-slate-800 pt-2">
+                    <span class="text-slate-400">คะแนนการประมวลผล:</span>
+                    <span id="finalScoreText" class="font-bold text-amber-300 text-base">100 / 100</span>
+                </div>
+            </div>
+
+            <!-- Algorithmic Explanation Note -->
+            <div class="bg-teal-950/50 border border-teal-800/60 rounded-xl p-3 text-xs text-teal-200 text-left mb-6">
+                <span class="font-bold text-teal-300"><i class="fas fa-brain"></i> แนวคิดวิทยาการคำนวณ:</span>
+                <p id="algoExplanation" class="mt-1">การเรียงลำดับคำสั่งที่ถูกต้องตามลำดับขั้นตอนช่วยให้โปรแกรมทำงานตรงตามเป้าหมายโดยไม่มีข้อผิดพลาด</p>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="retryLevel()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl font-bold text-sm transition">
+                    <i class="fas fa-redo"></i> เล่นอีกครั้ง
+                </button>
+                <button onclick="nextLevel()" id="nextLevelBtn" class="flex-1 bg-teal-500 hover:bg-teal-400 text-slate-950 py-2.5 rounded-xl font-bold text-sm transition shadow-lg">
+                    ด่านถัดไป <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Friendly Error / Bug Alert Modal -->
+    <div id="errorModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-800 border-2 border-rose-500 rounded-3xl p-6 max-w-md w-full shadow-2xl text-center">
+            <div class="text-5xl mb-2">🤖💥</div>
+            <h2 class="text-xl font-bold text-rose-400">พบข้อผิดพลาด! (Bug Detected)</h2>
+            <p id="errorModalMsg" class="text-sm text-slate-300 mt-2">ตัวละครเดินชนกำแพงหรือไม่สามารถไปต่อได้</p>
+
+            <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 my-4 text-left">
+                <div class="text-xs font-bold text-amber-400 flex items-center gap-1 mb-1">
+                    <i class="fas fa-bug"></i> คำแนะนำในการ Debugging:
+                </div>
+                <p id="debugAdvice" class="text-xs text-slate-300 leading-relaxed">
+                    ลองตรวจสอบบล็อกคำสั่งก่อนจุดที่ชนกำแพง แล้วเปลี่ยนทิศทางหลบสิ่งกีดขวางนะครับ!
+                </p>
+            </div>
+
+            <button onclick="closeErrorModal()" class="w-full bg-rose-500 hover:bg-rose-400 text-white font-bold py-3 rounded-xl transition shadow-lg">
+                <i class="fas fa-tools"></i> กลับไปแก้ไขคำสั่ง
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Hint Modal -->
+    <div id="hintModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-800 border border-amber-500/50 rounded-3xl p-6 max-w-md w-full shadow-2xl">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
+                    💡
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-amber-300">คำใบ้อัลกอริทึม</h3>
+                    <p class="text-xs text-slate-400">แนะนำแนวทางการแก้ปัญหาสำหรับด่านนี้</p>
+                </div>
+            </div>
+
+            <div id="hintContent" class="bg-slate-900 border border-slate-700 p-4 rounded-2xl text-xs md:text-sm text-slate-200 leading-relaxed my-3">
+                <!-- Hint Text injected dynamically -->
+            </div>
+
+            <button onclick="closeHintModal()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl transition">
+                เข้าใจแล้ว เข้าสู่การทดลอง
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Teacher Dashboard Modal -->
+    <div id="teacherModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 md:p-6 z-50 hidden">
+        <div class="bg-slate-800 border border-indigo-500/40 rounded-3xl p-5 md:p-6 max-w-4xl w-full shadow-2xl flex flex-col max-h-[90vh]">
+            
+            <!-- Dashboard Top Bar -->
+            <div class="flex justify-between items-center pb-4 border-b border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 flex items-center justify-center text-xl">
+                        📊
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Dashboard แผงควบคุมประเมินผลสำหรับครู</h2>
+                        <p class="text-xs text-slate-400">ติดตามความก้าวหน้า ทักษะ Algorithmic Thinking และ Debugging ของนักเรียน</p>
+                    </div>
+                </div>
+                <button onclick="closeTeacherDashboard()" class="text-slate-400 hover:text-white text-xl p-1">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Dashboard Content Scroll Area -->
+            <div class="overflow-y-auto py-4 space-y-5 flex-grow pr-1">
+                
+                <!-- Overview Stats Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-900 p-3 rounded-2xl border border-slate-700 text-center">
+                        <div class="text-xs text-slate-400">ด่านที่ผ่านแล้ว</div>
+                        <div id="dashCompletedLevels" class="text-xl font-bold text-emerald-400 mt-1">0 / 5</div>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded-2xl border border-slate-700 text-center">
+                        <div class="text-xs text-slate-400">คะแนนสะสมรวม</div>
+                        <div id="dashTotalScore" class="text-xl font-bold text-amber-400 mt-1">0</div>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded-2xl border border-slate-700 text-center">
+                        <div class="text-xs text-slate-400">จำนวนครั้งที่ผิดรวม</div>
+                        <div id="dashTotalErrors" class="text-xl font-bold text-rose-400 mt-1">0</div>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded-2xl border border-slate-700 text-center">
+                        <div class="text-xs text-slate-400">การประเมินทักษะ</div>
+                        <div id="dashSkillLevel" class="text-sm font-bold text-indigo-300 mt-2">กำลังเริ่มต้น</div>
+                    </div>
+                </div>
+
+                <!-- Level Detailed Breakdown Table -->
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden">
+                    <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                        รายละเอียดผลการเล่นแต่ละด่าน
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-800/80 text-slate-400 uppercase text-[10px]">
+                                <tr>
+                                    <th class="py-2.5 px-4">ด่าน</th>
+                                    <th class="py-2.5 px-4">สถานะ</th>
+                                    <th class="py-2.5 px-4">ดาว</th>
+                                    <th class="py-2.5 px-4">คำสั่งที่ใช้</th>
+                                    <th class="py-2.5 px-4">ข้อผิดพลาด</th>
+                                    <th class="py-2.5 px-4">แนวคิดวิชาการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teacherTableBody" class="divide-y divide-slate-800">
+                                <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pedagogical Teacher Insights -->
+                <div class="bg-indigo-950/40 border border-indigo-800/60 rounded-2xl p-4 text-xs space-y-2">
+                    <h4 class="font-bold text-indigo-300 text-sm flex items-center gap-1.5">
+                        <i class="fas fa-graduation-cap"></i> คำแนะนำและข้อเสนอแนะในการจัดการเรียนรู้:
+                    </h4>
+                    <p id="teacherFeedbackText" class="text-slate-300 leading-relaxed">
+                        นักเรียนกำลังอยู่ในช่วงเรียนรู้ลำดับขั้นตอน หากนักเรียนมีจำนวนครั้งที่ผิดพลาดสูงในด่านที่ 5 ควรทบทวนเรื่องการเปรียบเทียบคำสั่งที่เกิดขึ้นจริงกับคำสั่งที่วางแผนไว้ (Debugging)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Footer Action Controls -->
+            <div class="pt-4 border-t border-slate-700 flex justify-between items-center">
+                <button onclick="resetAllProgress()" class="text-xs text-rose-400 hover:text-rose-300 transition">
+                    <i class="fas fa-redo"></i> รีเซ็ตข้อมูลการเรียนรู้ทั้งหมด
+                </button>
+                <button onclick="closeTeacherDashboard()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2 rounded-xl text-xs transition">
+                    ปิดหน้าต่าง
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800 py-2.5 px-4 text-center text-xs text-slate-500">
+        สื่อการเรียนรู้วิทยาการคำนวณ ป.5 &bull; ภารกิจนักสำรวจดิจิทัล &bull; เน้นการเรียนรู้ผ่านการปฏิบัติจริง (Active Learning)
+    </footer>
+
+    <script>
+        /* SOUND MANAGER USING WEB AUDIO API */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) this.ctx = new AudioContext();
+                }
+            }
+
+            playStep() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playStar() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            }
+
+            playSuccess() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.1);
+                    gain.gain.setValueAtTime(0.2, now + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.1);
+                    osc.stop(now + i * 0.1 + 0.25);
+                });
+            }
+
+            playBump() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(60, now + 0.2);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+        }
+
+        const soundFX = new SoundEngine();
+
+        function toggleSound() {
+            soundFX.muted = !soundFX.muted;
+            const icon = document.getElementById('soundIcon');
+            if (soundFX.muted) {
+                icon.className = 'fas fa-volume-mute text-rose-400';
+            } else {
+                icon.className = 'fas fa-volume-up text-teal-300';
+                soundFX.playStep();
+            }
+        }
+
+        // LEVEL DATA CONFIGURATION (5 LEVELS)
+        const LEVELS = {
+            1: {
+                id: 1,
+                badge: "ด่านที่ 1",
+                title: "ป่าดิจิทัล (Digital Forest)",
+                desc: "ฝึกการคิดอย่างเป็นขั้นตอน โดยพาตัวละครเดินตรงไปยังเป้าหมาย",
+                hint: "เส้นทางด่านนี้ไม่มีสิ่งกีดขวาง ลองสังเกตว่าเป้าหมายอยู่ทางขวามือกี่ช่อง แล้วเพิ่มคำสั่ง 'เดินขวา' ตามจำนวนช่องนั้นครับ",
+                algoConcept: "การลำดับขั้นตอน (Sequential Control Flow) คือการสั่งงานให้ทำงานทีละขั้นตอนจากบนลงล่าง",
+                start: { r: 2, c: 1 },
+                goal: { r: 2, c: 5 },
+                walls: [],
+                stars: [],
+                optimalSteps: 4,
+                initialCommands: []
+            },
+            2: {
+                id: 2,
+                badge: "ด่านที่ 2",
+                title: "เมืองหุ่นยนต์ (Robot City)",
+                desc: "วางแผนอ้อมสิ่งกีดขวางและทางตันเพื่อไปถึงเป้าหมายอย่างปลอดภัย",
+                hint: "มีกำแพงกั้นอยู่ตรงกลาง ให้เลือกว่าจะเดินอ้อมขึ้นด้านบน หรืออ้อมลงด้านล่าง เพื่อหลบสิ่งกีดขวาง",
+                algoConcept: "การหลบสิ่งกีดขวางต้องการการวางแผนและคำนวณเส้นทางล่วงหน้าอย่างระมัดระวัง",
+                start: { r: 1, c: 1 },
+                goal: { r: 5, c: 5 },
+                walls: [
+                    { r: 1, c: 3 }, { r: 2, c: 3 }, { r: 3, c: 3 },
+                    { r: 3, c: 4 }, { r: 3, c: 5 }
+                ],
+                stars: [],
+                optimalSteps: 8,
+                initialCommands: []
+            },
+            3: {
+                id: 3,
+                badge: "ด่านที่ 3",
+                title: "ห้องทดลองไซเบอร์ (Cyber Lab)",
+                desc: "ต้องเก็บ 'ดาวรหัสผ่าน' ทั้งหมดก่อน จึงจะปลดล็อคประตูเป้าหมายได้",
+                hint: "วางแผนเดินทางไปเก็บดาวก่อน ⭐ แล้วค่อยวางคำสั่งต่อไปยังประตูเป้าหมาย 🚩",
+                algoConcept: "เงื่อนไขของโปรแกรม (Constraints): เป้าหมายบางอย่างจะสำเร็จได้ก็ต่อเมื่อทำเงื่อนไขตั้งต้นเสร็จก่อน",
+                start: { r: 0, c: 0 },
+                goal: { r: 6, c: 6 },
+                walls: [
+                    { r: 2, c: 0 }, { r: 2, c: 1 }, { r: 2, c: 2 }, { r: 2, c: 3 },
+                    { r: 4, c: 3 }, { r: 4, c: 4 }, { r: 4, c: 5 }, { r: 4, c: 6 }
+                ],
+                stars: [{ r: 1, c: 5, collected: false }],
+                optimalSteps: 12,
+                initialCommands: []
+            },
+            4: {
+                id: 4,
+                badge: "ด่านที่ 4",
+                title: "สถานีอวกาศ (Space Station)",
+                desc: "มีเส้นทางหลายทาง ให้เลือกลำดับคำสั่งที่สั้นและมีประสิทธิภาพที่สุด!",
+                hint: "ลองนับจำนวนช่องทางซ้ายและทางขวา เปรียบเทียบกันว่าเส้นทางไหนใช้คำสั่งน้อยกว่า",
+                algoConcept: "ประสิทธิภาพของอัลกอริทึม (Efficiency): อัลกอริทึมที่ดีควรได้ผลลัพธ์ถูกต้องโดยใช้พลังงาน/คำสั่งน้อยที่สุด",
+                start: { r: 0, c: 3 },
+                goal: { r: 7, c: 3 },
+                walls: [
+                    { r: 2, c: 2 }, { r: 2, c: 3 }, { r: 2, c: 4 },
+                    { r: 3, c: 2 }, { r: 3, c: 4 },
+                    { r: 4, c: 2 }, { r: 4, c: 4 },
+                    { r: 5, c: 2 }, { r: 5, c: 3 }, { r: 5, c: 4 }
+                ],
+                stars: [],
+                optimalSteps: 11, // Going around left or right loop
+                initialCommands: []
+            },
+            5: {
+                id: 5,
+                badge: "ด่านที่ 5 (Debugging)",
+                title: "ศูนย์ซ่อมคำสั่ง (Bug Repair Center)",
+                desc: "มีชุดคำสั่งที่ผิดพลาด (Bug) วางแม็ปไว้อยู่แล้ว ให้แก้ไข/ลบ/สลับคำสั่งให้ถูกต้อง",
+                hint: "กด 'เริ่มภารกิจ' ดูว่าตัวละครเดินไปติดตรงไหน จากนั้นลบคำสั่งที่เกิน หรือแก้ไขทิศทางตรงจุดนั้น",
+                algoConcept: "การแก้ไขข้อผิดพลาด (Debugging) คือทักษะสำคัญของนักเขียนโปรแกรมในการค้นหาและลบบั๊กออก",
+                start: { r: 1, c: 1 },
+                goal: { r: 6, c: 5 },
+                walls: [
+                    { r: 2, c: 1 }, { r: 2, c: 2 }, { r: 2, c: 3 },
+                    { r: 4, c: 3 }, { r: 4, c: 4 }, { r: 4, c: 5 }
+                ],
+                stars: [],
+                optimalSteps: 9,
+                // Buggy pre-loaded commands for students to fix
+                initialCommands: ['RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'LEFT', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT']
+            }
+        };
+
+        // GAME STATE VARIABLES
+        let currentLevelId = 1;
+        let playerPos = { r: 0, c: 0 };
+        let activeLevelData = null;
+        let userCommands = [];
+        let isRunning = false;
+        let stepDelay = 350; // ms
+        let levelErrors = 0;
+        let activeStars = [];
+
+        // TEACHER DASHBOARD RECORDS (In-Memory / LocalStorage)
+        let studentRecords = JSON.parse(localStorage.getItem('digital_explorer_records')) || {
+            1: { completed: false, score: 0, stars: 0, errors: 0, stepsUsed: 0 },
+            2: { completed: false, score: 0, stars: 0, errors: 0, stepsUsed: 0 },
+            3: { completed: false, score: 0, stars: 0, errors: 0, stepsUsed: 0 },
+            4: { completed: false, score: 0, stars: 0, errors: 0, stepsUsed: 0 },
+            5: { completed: false, score: 0, stars: 0, errors: 0, stepsUsed: 0 }
+        };
+
+        function saveRecords() {
+            localStorage.setItem('digital_explorer_records', JSON.stringify(studentRecords));
+        }
+
+        // INIT ON WINDOW LOAD
+        window.onload = function() {
+            initGame();
+        };
+
+        function initGame() {
+            switchLevel(1);
+        }
+
+        function switchLevel(levelNum) {
+            if (isRunning) return;
+            currentLevelId = levelNum;
+            document.getElementById('levelSelect').value = levelNum;
+            
+            // Deep clone level data
+            activeLevelData = JSON.parse(JSON.stringify(LEVELS[levelNum]));
+            playerPos = { ...activeLevelData.start };
+            activeStars = activeLevelData.stars ? JSON.parse(JSON.stringify(activeLevelData.stars)) : [];
+            userCommands = [...(activeLevelData.initialCommands || [])];
+            levelErrors = 0;
+
+            // Update UI Labels
+            document.getElementById('levelBadge').innerText = activeLevelData.badge;
+            document.getElementById('levelTitle').innerText = activeLevelData.title;
+            document.getElementById('levelDesc').innerText = activeLevelData.desc;
+            document.getElementById('optimalStepText').innerText = `${activeLevelData.optimalSteps} คำสั่ง`;
+            document.getElementById('errorCountText').innerText = `0 ครั้ง`;
+
+            updateStarGoalDisplay();
+            renderGrid();
+            renderCommandSequence();
+            updateCurrentPosDisplay();
+        }
+
+        function updateStarGoalDisplay() {
+            if (activeStars.length === 0) {
+                document.getElementById('starGoalText').innerText = "ไม่ต้องใช้";
+            } else {
+                const collected = activeStars.filter(s => s.collected).length;
+                document.getElementById('starGoalText').innerText = `${collected}/${activeStars.length} ⭐`;
+            }
+        }
+
+        function renderGrid() {
+            const board = document.getElementById('gridBoard');
+            board.innerHTML = '';
+
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell rounded-lg border flex items-center justify-center text-lg md:text-xl font-bold relative select-none shadow-sm';
+
+                    // Check contents
+                    const isStart = (r === activeLevelData.start.r && c === activeLevelData.start.c);
+                    const isGoal = (r === activeLevelData.goal.r && c === activeLevelData.goal.c);
+                    const isPlayer = (r === playerPos.r && c === playerPos.c);
+                    const isWall = activeLevelData.walls.some(w => w.r === r && w.c === c);
+                    const starItem = activeStars.find(s => s.r === r && s.c === c);
+
+                    if (isWall) {
+                        cell.classList.add('bg-slate-800', 'border-slate-700', 'text-slate-600');
+                        cell.innerHTML = '<span class="opacity-80">🧱</span>';
+                    } else if (isPlayer) {
+                        cell.classList.add('bg-teal-500/30', 'border-teal-400', 'ring-2', 'ring-teal-400/50');
+                        cell.innerHTML = '<span class="explorer-avatar transform hover:scale-125 transition">🧑‍🚀</span>';
+                    } else if (isGoal) {
+                        cell.classList.add('bg-amber-500/20', 'border-amber-400/80', 'animate-pulse');
+                        cell.innerHTML = '🚩';
+                    } else if (starItem && !starItem.collected) {
+                        cell.classList.add('bg-yellow-500/10', 'border-yellow-500/30');
+                        cell.innerHTML = '<span class="animate-bounce inline-block">⭐</span>';
+                    } else if (isStart) {
+                        cell.classList.add('bg-indigo-950/40', 'border-indigo-500/30');
+                        cell.innerHTML = '<span class="text-xs text-indigo-400 font-mono">START</span>';
+                    } else {
+                        cell.classList.add('bg-slate-900/90', 'border-slate-800/80');
+                    }
+
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        function updateCurrentPosDisplay() {
+            document.getElementById('currentPosText').innerText = `พิกัดปัจจุบัน: (${playerPos.c}, ${playerPos.r})`;
+        }
+
+        function addCommand(type) {
+            if (isRunning) return;
+            if (userCommands.length >= 25) return; // limit safety
+            soundFX.playStep();
+            userCommands.push(type);
+            renderCommandSequence();
+        }
+
+        function removeCommand(index) {
+            if (isRunning) return;
+            soundFX.playStep();
+            userCommands.splice(index, 1);
+            renderCommandSequence();
+        }
+
+        function clearCommands() {
+            if (isRunning) return;
+            soundFX.playStep();
+            userCommands = [];
+            renderCommandSequence();
+        }
+
+        function renderCommandSequence() {
+            const container = document.getElementById('commandSequence');
+            document.getElementById('commandCountBadge').innerText = `${userCommands.length} คำสั่ง`;
+
+            if (userCommands.length === 0) {
+                container.innerHTML = `
+                    <div id="emptySequenceMsg" class="h-full flex flex-col items-center justify-center text-slate-500 text-xs py-8">
+                        <i class="fas fa-puzzle-piece text-3xl mb-2 text-slate-600"></i>
+                        <p>ยังไม่มีคำสั่งในลำดับ</p>
+                        <p class="text-[11px] text-slate-600">คลิกปุ่มเดินด้านบนเพื่อวางแผนคำสั่ง</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            userCommands.forEach((cmd, idx) => {
+                const item = document.createElement('div');
+                item.id = `cmd-item-${idx}`;
+                item.className = 'flex items-center justify-between bg-slate-900 border border-slate-700/80 px-3 py-2 rounded-xl text-xs font-bold transition hover:border-teal-400/50';
+
+                let icon = '';
+                let label = '';
+                let colorClass = '';
+
+                if (cmd === 'UP') {
+                    icon = '<i class="fas fa-arrow-up text-sky-400"></i>';
+                    label = 'เดินขึ้น';
+                    colorClass = 'text-sky-300';
+                } else if (cmd === 'DOWN') {
+                    icon = '<i class="fas fa-arrow-down text-sky-400"></i>';
+                    label = 'เดินลง';
+                    colorClass = 'text-sky-300';
+                } else if (cmd === 'LEFT') {
+                    icon = '<i class="fas fa-arrow-left text-indigo-400"></i>';
+                    label = 'เดินซ้าย';
+                    colorClass = 'text-indigo-300';
+                } else if (cmd === 'RIGHT') {
+                    icon = '<i class="fas fa-arrow-right text-indigo-400"></i>';
+                    label = 'เดินขวา';
+                    colorClass = 'text-indigo-300';
+                }
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-[10px] font-mono">${idx + 1}</span>
+                        ${icon}
+                        <span class="${colorClass}">${label}</span>
+                    </div>
+                    <button onclick="removeCommand(${idx})" class="text-slate-500 hover:text-rose-400 px-1 transition" title="ลบคำสั่งนี้">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function setSpeed(ms) {
+            stepDelay = ms;
+            document.getElementById('speedSlow').className = ms === 600 ? 'px-2 py-1 bg-teal-600 text-white font-bold rounded text-xs' : 'px-2 py-1 bg-slate-700 rounded text-slate-300 text-xs';
+            document.getElementById('speedNormal').className = ms === 350 ? 'px-2 py-1 bg-teal-600 text-white font-bold rounded text-xs' : 'px-2 py-1 bg-slate-700 rounded text-slate-300 text-xs';
+            document.getElementById('speedFast').className = ms === 180 ? 'px-2 py-1 bg-teal-600 text-white font-bold rounded text-xs' : 'px-2 py-1 bg-slate-700 rounded text-slate-300 text-xs';
+        }
+
+        function resetMission() {
+            if (isRunning) return;
+            playerPos = { ...activeLevelData.start };
+            activeStars = activeLevelData.stars ? JSON.parse(JSON.stringify(activeLevelData.stars)) : [];
+            updateStarGoalDisplay();
+            renderGrid();
+            updateCurrentPosDisplay();
+            highlightCommandStep(-1);
+        }
+
+        async function runMission() {
+            if (isRunning) return;
+            if (userCommands.length === 0) {
+                showErrorModal("ยังไม่มีคำสั่งในลำดับ! โปรดเลือกเพิ่มคำสั่งเดินก่อนกดปุ่มเริ่มภารกิจครับ", "ลองกดปุ่ม เดินขึ้น เดินลง เดินซ้าย หรือ เดินขวา เพื่อสร้างขั้นตอนวิธี (Algorithm)");
+                return;
+            }
+
+            // Reset player position before starting sequence
+            resetMission();
+            isRunning = true;
+            document.getElementById('runBtn').disabled = true;
+            document.getElementById('runBtn').classList.add('opacity-50');
+
+            let crashed = false;
+
+            for (let i = 0; i < userCommands.length; i++) {
+                if (!isRunning) break;
+
+                highlightCommandStep(i);
+                const dir = userCommands[i];
+                let nextR = playerPos.r;
+                let nextC = playerPos.c;
+
+                if (dir === 'UP') nextR--;
+                else if (dir === 'DOWN') nextR++;
+                else if (dir === 'LEFT') nextC--;
+                else if (dir === 'RIGHT') nextC++;
+
+                // Bounds Check
+                if (nextR < 0 || nextR >= 8 || nextC < 0 || nextC >= 8) {
+                    crashed = true;
+                    soundFX.playBump();
+                    triggerError("ตัวละครเดินตกขอบแผนที่!", "ลองตรวจสอบคำสั่งสุดท้ายที่คุณตั้งไว้ ว่าเดินเกินขอบตาราง 8x8 หรือไม่");
+                    break;
+                }
+
+                // Wall Check
+                const hitWall = activeLevelData.walls.some(w => w.r === nextR && w.c === nextC);
+                if (hitWall) {
+                    crashed = true;
+                    soundFX.playBump();
+                    triggerError("ตัวละครเดินชนกำแพงสิ่งกีดขวาง!", "สังเกตตำแหน่งกำแพง 🧱 ในตาราง แล้วปรับคำสั่งอ้อมไปทางอื่นครับ");
+                    break;
+                }
+
+                // Valid move
+                playerPos.r = nextR;
+                playerPos.c = nextC;
+                soundFX.playStep();
+
+                // Star Pickup Check
+                const starFound = activeStars.find(s => s.r === playerPos.r && s.c === playerPos.c && !s.collected);
+                if (starFound) {
+                    starFound.collected = true;
+                    soundFX.playStar();
+                    updateStarGoalDisplay();
+                }
+
+                renderGrid();
+                updateCurrentPosDisplay();
+
+                await new Promise(res => setTimeout(res, stepDelay));
+            }
+
+            highlightCommandStep(-1);
+            isRunning = false;
+            document.getElementById('runBtn').disabled = false;
+            document.getElementById('runBtn').classList.remove('opacity-50');
+
+            if (!crashed) {
+                // Check Win Conditions
+                const uncollectedStars = activeStars.some(s => !s.collected);
+                const reachedGoal = (playerPos.r === activeLevelData.goal.r && playerPos.c === activeLevelData.goal.c);
+
+                if (reachedGoal) {
+                    if (uncollectedStars) {
+                        triggerError("ถึงจุดหมายแล้ว แต่ยังเก็บดาวรหัสผ่านไม่ครบ!", "ด่านนี้จำเป็นต้องไปเก็บดาว ⭐ ให้ครบทุกดวงก่อนเดินไปยังเป้าหมาย 🚩 ครับ");
+                    } else {
+                        // Complete Level Success!
+                        soundFX.playSuccess();
+                        handleLevelSuccess();
+                    }
+                } else {
+                    // Stopped short of goal
+                    triggerError("ชุดคำสั่งหมดแล้ว แต่ตัวละครยังไม่ถึงจุดหมาย!", "ลองเพิ่มคำสั่งพาตัวละครเดินต่อไปให้ถึงธงเป้าหมาย 🚩 ครับ");
+                }
+            }
+        }
+
+        function highlightCommandStep(index) {
+            userCommands.forEach((_, idx) => {
+                const el = document.getElementById(`cmd-item-${idx}`);
+                if (el) {
+                    if (idx === index) {
+                        el.classList.add('bg-teal-500/20', 'border-teal-400', 'ring-1', 'ring-teal-400');
+                    } else {
+                        el.classList.remove('bg-teal-500/20', 'border-teal-400', 'ring-1', 'ring-teal-400');
+                    }
+                }
+            });
+        }
+
+        function triggerError(msg, debugTip) {
+            levelErrors++;
+            document.getElementById('errorCountText').innerText = `${levelErrors} ครั้ง`;
+            showErrorModal(msg, debugTip);
+        }
+
+        function handleLevelSuccess() {
+            // Calculate Score & Stars
+            const optimal = activeLevelData.optimalSteps;
+            const used = userCommands.length;
+            
+            let starRating = 3;
+            if (used > optimal + 4 || levelErrors >= 3) {
+                starRating = 1;
+            } else if (used > optimal || levelErrors >= 1) {
+                starRating = 2;
+            }
+
+            const baseScore = 100;
+            const penaltyStep = Math.max(0, (used - optimal) * 5);
+            const penaltyError = levelErrors * 10;
+            const finalScore = Math.max(40, baseScore - penaltyStep - penaltyError);
+
+            // Save Records for Teacher Dashboard
+            studentRecords[currentLevelId] = {
+                completed: true,
+                score: finalScore,
+                stars: starRating,
+                errors: levelErrors,
+                stepsUsed: used
+            };
+            saveRecords();
+
+            // Populate Modal
+            document.getElementById('finalStepsText').innerText = `${used} คำสั่ง (บล็อกแนะนำ: ${optimal})`;
+            document.getElementById('finalErrorsText').innerText = `${levelErrors} ครั้ง`;
+            document.getElementById('finalScoreText').innerText = `${finalScore} / 100 คะแนน`;
+            document.getElementById('algoExplanation').innerText = activeLevelData.algoConcept;
+
+            // Render Stars
+            const starCont = document.getElementById('starContainer');
+            starCont.innerHTML = '';
+            for (let i = 1; i <= 3; i++) {
+                if (i <= starRating) {
+                    starCont.innerHTML += '<span class="text-amber-400 animate-bounce">⭐</span>';
+                } else {
+                    starCont.innerHTML += '<span class="text-slate-600">⭐</span>';
+                }
+            }
+
+            document.getElementById('successModal').classList.remove('hidden');
+        }
+
+        function retryLevel() {
+            document.getElementById('successModal').classList.add('hidden');
+            switchLevel(currentLevelId);
+        }
+
+        function nextLevel() {
+            document.getElementById('successModal').classList.add('hidden');
+            if (currentLevelId < 5) {
+                switchLevel(currentLevelId + 1);
+            } else {
+                openTeacherDashboard();
+            }
+        }
+
+        function showErrorModal(msg, advice) {
+            document.getElementById('errorModalMsg').innerText = msg;
+            document.getElementById('debugAdvice').innerText = advice;
+            document.getElementById('errorModal').classList.remove('hidden');
+        }
+
+        function closeErrorModal() {
+            document.getElementById('errorModal').classList.add('hidden');
+        }
+
+        function showHintModal() {
+            soundFX.playStep();
+            document.getElementById('hintContent').innerText = activeLevelData.hint;
+            document.getElementById('hintModal').classList.remove('hidden');
+        }
+
+        function closeHintModal() {
+            document.getElementById('hintModal').classList.add('hidden');
+        }
+
+        function openTeacherDashboard() {
+            soundFX.playStep();
+            renderTeacherDashboard();
+            document.getElementById('teacherModal').classList.remove('hidden');
+        }
+
+        function closeTeacherDashboard() {
+            document.getElementById('teacherModal').classList.add('hidden');
+        }
+
+        function renderTeacherDashboard() {
+            let completedCount = 0;
+            let totalScore = 0;
+            let totalErrors = 0;
+
+            const tbody = document.getElementById('teacherTableBody');
+            tbody.innerHTML = '';
+
+            for (let i = 1; i <= 5; i++) {
+                const lvlInfo = LEVELS[i];
+                const rec = studentRecords[i];
+
+                if (rec.completed) {
+                    completedCount++;
+                    totalScore += rec.score;
+                }
+                totalErrors += rec.errors;
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 transition';
+
+                const statusBadge = rec.completed 
+                    ? '<span class="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full text-[10px] border border-emerald-500/30">ผ่านแล้ว</span>'
+                    : '<span class="bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full text-[10px]">ยังไม่ทำ</span>';
+
+                const starsText = rec.completed ? '⭐'.repeat(rec.stars) : '-';
+
+                tr.innerHTML = `
+                    <td class="py-2.5 px-4 font-bold text-white">${lvlInfo.badge}: ${lvlInfo.title}</td>
+                    <td class="py-2.5 px-4">${statusBadge}</td>
+                    <td class="py-2.5 px-4">${starsText}</td>
+                    <td class="py-2.5 px-4 font-mono">${rec.stepsUsed || 0} / ${lvlInfo.optimalSteps}</td>
+                    <td class="py-2.5 px-4 font-mono text-rose-400">${rec.errors}</td>
+                    <td class="py-2.5 px-4 text-slate-400 text-[11px]">${lvlInfo.algoConcept}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            document.getElementById('dashCompletedLevels').innerText = `${completedCount} / 5`;
+            document.getElementById('dashTotalScore').innerText = `${totalScore} คะแนน`;
+            document.getElementById('dashTotalErrors').innerText = `${totalErrors} ครั้ง`;
+
+            // Skill Evaluation Logic
+            const skillEl = document.getElementById('dashSkillLevel');
+            const feedbackEl = document.getElementById('teacherFeedbackText');
+
+            if (completedCount === 5) {
+                skillEl.innerText = "ผู้เชี่ยวชาญการแก้ไขโปรแกรม (Expert)";
+                skillEl.className = "text-sm font-bold text-emerald-400 mt-2";
+                feedbackEl.innerText = "นักเรียนมีความเข้าใจทั้งการวางแผน Sequential, การแก้ปัญหาสภาพเงื่อนไข และทักษะ Debugging ครบถ้วนเป็นอย่างดี!";
+            } else if (completedCount >= 3) {
+                skillEl.innerText = "นักคิดอัลกอริทึมรุ่นเยาว์ (Intermediate)";
+                skillEl.className = "text-sm font-bold text-teal-300 mt-2";
+                feedbackEl.innerText = "นักเรียนสามารถวางแผนชุดคำสั่งได้ดี แนะนำให้สนับสนุนทักษะการตรวจสอบคำสั่งย้อนหลัง (Debugging) ในด่านที่ 5 ต่อไป";
+            } else {
+                skillEl.innerText = "นักสำรวจระดับเริ่มต้น (Beginner)";
+                skillEl.className = "text-sm font-bold text-amber-300 mt-2";
+                feedbackEl.innerText = "นักเรียนกำลังเรียนรู้พื้นฐานทิศทางและลำดับคำสั่ง แนะนำให้ครูผู้สอนช่วยแนะแนวการนับจำนวนช่องและการเรียงลำดับล่วงหน้า";
+            }
+        }
+
+        function resetAllProgress() {
+            if (confirm("คุณต้องการรีเซ็ตประวัติและผลการเรียนรู้ของนักเรียนทั้งหมดหรือไม่?")) {
+                studentRecords = {
+                    1: { completed: false, score: 0, stars: 0, errors: 0, stepsUsed: 0 },
+                    2: { completed: false, score: 0, stars: 0, errors: 0, stepsUsed: 0 },
+                    3: { completed: false, score: 0, stars: 0, errors: 0, stepsUsed: 0 },
+                    4: { completed: false, score: 0, stars: 0, errors: 0, stepsUsed: 0 },
+                    5: { completed: false, score: 0, stars: 0, errors: 0, stepsUsed: 0 }
+                };
+                saveRecords();
+                renderTeacherDashboard();
+                switchLevel(1);
+            }
+        }
+    </script>
+</body>
+</html>
